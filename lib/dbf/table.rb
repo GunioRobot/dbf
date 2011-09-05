@@ -21,10 +21,15 @@ module DBF
       "f5" => "FoxPro with memo file",
       "fb" => "FoxPro without memo file"
     }
-
-    attr_reader   :version              # Internal dBase version number
-    attr_reader   :record_count         # Total number of records
-    attr_accessor :encoding             # Source encoding (for ex. :cp1251)
+    
+    # Internal dBase version number
+    attr_reader :version
+    
+    # Total number of records
+    attr_reader :record_count
+    
+    # Source encoding (for example :cp1251)
+    attr_accessor :encoding
 
     # Opens a DBF::Table
     # Example:
@@ -108,7 +113,9 @@ module DBF
     # @param [optional String] path Defaults to basename of dbf file
     def to_csv(path = nil)
       csv_class.open(path || default_csv_path, 'w', :force_quotes => true) do |csv|
-        csv << columns.map {|c| c.name}
+        # add a header row
+        csv << columns.map {|column| column.name}
+        # add all data rows
         each {|record| csv << record.to_a}
       end
     end
@@ -154,12 +161,12 @@ module DBF
     def columns
       @columns ||= begin
         column_count = (@header_length - DBF_HEADER_SIZE + 1) / DBF_HEADER_SIZE
-
+        
         @data.seek(DBF_HEADER_SIZE)
         columns = []
         column_count.times do
-          name, type, length, decimal = @data.read(32).unpack('a10 x a x4 C2')
-          columns << Column.new(name.strip, type, length, decimal, @encoding) if length > 0
+          definition = ColumnDefinition.read(@data.read(32))
+          columns << Column.new(definition, @encoding) if definition.data_length > 0
         end
         columns
       end
