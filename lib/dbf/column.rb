@@ -4,16 +4,47 @@ module DBF
 
   # DBF::Column stores all the information about a column including its name,
   # type, length and number of decimal places (if any)
-  class Column
+  class Column    
     attr_reader :name, :type, :length, :decimal
+    
+    class Definition < BinData::Record
+      endian :little
+            
+      string :name, :length => 10
+      skip :length => 1
+      string :data_type, :length => 1
+      skip :length => 4
+      uint8 :data_length
+      uint8 :decimal
+      
+      def length
+        field_names.inject(1) {|s,n| s += n.size}
+      end
+    end
+    
+    # Initialize a new DBF::Column from a raw data stream
+    #
+    # @param [IO] data
+    # @param [String] encoding
+    # @return [DBF::Column]
+    def self.from_data(data, encoding = nil)
+      d = Definition.new
+      d.read(data.read(d.length))
+      if d.data_length > 0
+        new(d.name.value, d.data_type.value, d.data_length.value, d.decimal.value, encoding)
+      end
+    end
 
     # Initialize a new DBF::Column
     #
+    # @param [Definition] definition
     # @param [String] name
     # @param [String] type
-    # @param [Fixnum] length
-    # @param [Fixnum] decimal
-    def initialize(name, type, length, decimal, encoding=nil)
+    # @param [FixNum] length
+    # @param [FixNum] decimal
+    # @param [String] encoding
+    # @return [DBF::Column]
+    def initialize(name, type, length, decimal, encoding = nil)
       @name, @type, @length, @decimal, @encoding = clean(name), type, length, decimal, encoding
 
       raise ColumnLengthError, "field length must be greater than 0" unless length > 0

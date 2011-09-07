@@ -165,10 +165,9 @@ module DBF
         @data.seek(DBF_HEADER_SIZE)
         columns = []
         column_count.times do
-          definition = ColumnDefinition.read(@data.read(32))
-          columns << Column.new(definition, @encoding) if definition.data_length > 0
+          columns << Column.from_data(@data, @encoding)
         end
-        columns
+        columns.compact
       end
     end
 
