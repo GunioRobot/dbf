@@ -30,6 +30,36 @@ module DBF
     
     # Source encoding (for example :cp1251)
     attr_accessor :encoding
+    
+    class Header < BinData::Record
+      endian :little
+      
+      uint8 :version
+      struct :_last_update do
+        uint8 :year
+        uint8 :month
+        uint8 :day
+      end
+      uint32 :record_count
+      uint16 :header_length
+      uint16 :record_length
+      skip :length => 2
+      uint8 :incomplete_transaction
+      uint8 :encrypted
+      skip :length => 4
+      skip :length => 8
+      uint8 :mdx
+      uint8 :language
+      skip :length => 2
+      
+      def version_hex
+        version.to_s(16).rjust(2, '0')
+      end
+      
+      def last_update
+        Date.new _last_update.year, _last_update.month, _last_update.day
+      end
+    end
 
     # Opens a DBF::Table
     # Example:
@@ -202,8 +232,14 @@ module DBF
 
     def get_header_info #nodoc
       @data.rewind
-      @version, @record_count, @header_length, @record_length, encoding_key =
-        @data.read(DBF_HEADER_SIZE).unpack("H2 x3 V v2 x17H2")
+      header = Header.new
+      header.read(@data.read(DBF_HEADER_SIZE))
+
+      @version = header.version.to_i.to_s(16).rjust(2, '0')
+      @record_count = header.record_count
+      @record_length = header.record_length
+      @header_length = header.header_length
+      encoding_key = header.language
       @encoding = self.class.encodings[encoding_key] if "".respond_to? :encoding
     end
 

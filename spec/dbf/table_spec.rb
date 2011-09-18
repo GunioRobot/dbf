@@ -1,6 +1,24 @@
 require "spec_helper"
 
-describe DBF::Table do  
+describe DBF::Table do
+  describe DBF::Table::Header do
+    let(:header) do
+      header = DBF::Table::Header.new
+      header.read "\x03\x05\a\r\x0E\x00\x00\x00\x01\x04N\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      header
+    end
+    
+    specify { header.version.should == 3 }
+    specify { header.last_update.should == Date.new(5, 7, 13) }
+    specify { header.record_count.should == 14 }
+    specify { header.header_length.should == 1025 }
+    specify { header.record_length.should == 590 }
+    specify { header.incomplete_transaction.should == 0 }
+    specify { header.encrypted.should == 0 }
+    specify { header.mdx.should == 0 }
+    specify { header.language.should == 0 }
+  end
+  
   context "when closed" do
     before do
       @table = DBF::Table.new "#{DB_PATH}/dbase_83.dbf"
