@@ -102,7 +102,7 @@ module DBF
     end
 
     def unpack_unsigned_long(value) #nodoc
-      value.unpack('V')[0]
+      BinData::Int32le.read(value)
     end
 
     def boolean(value) #nodoc
